@@ -144,7 +144,7 @@ Here, we’ll report on `direct` and `total`. You can see `indirect` in the data
 
 
 
-## Teams and departmental structure
+## Supervisor of interest (and departmental structure)
 
 To focus on a particular supervisor and their team(s), input their `position_gid` (`supervisor_gid` if you’re finding them from the row of someone reporting to them) below as the “supervisor of interest”. Then, select the “degrees of reporting” you’re interested in: `1` will show you just the positions reporting directly to that supervisor (i.e., their immediate team), `2` will show you who reports to _those_ positions, and so on.
 
@@ -229,9 +229,8 @@ view(Inputs.table(positions_on_team_to_nth_degree))
 ```
 
 ```js
-const toi_show_org_chart = view(Inputs.toggle({label: `Show the hierarchical org chart for team of interest?`, value: false}))
+const toi_show_org_chart = view(Inputs.toggle({label: `Show the hierarchical org chart for supervisor of interest?`, value: false}))
 ```
-
 
 ```js
 const positions_on_team_to_nth_degree_graph = d3
@@ -309,6 +308,95 @@ display(toi_show_org_chart ?
 	]
 	})
 : html`<p><em>“Show hierarchical org chart” checkbox not checked.</em></p>`)
+```
+
+
+## Teams
+
+```js
+const remove_teams_of_one = view(Inputs.toggle({label: "Remove teams where a supervisor only has one employee", value: true}))
+```
+
+```js
+const calculate_team_characterstics_average = (varToAverage) => Math.round(team_characteristics.derive({avg: aq.op.average(varToAverage)}).get("avg") * 10) / 10
+```
+
+${org_to_analyze_label} has ${team_characteristics.objects().length.toLocaleString()} teams (in other words, each of the ${departmental_supervisors.length.toLocaleString()} supervisors runs a “team”, consisting of their direct reports). On average, teams:
+
+- are ${calculate_team_characterstics_average("n_supervised")} employees, not including the supervisor
+- include ${calculate_team_characterstics_average("n_groups")} groups, not including the supervisor’s group
+- include ${calculate_team_characterstics_average("n_supervisors_on_team")} (${calculate_team_characterstics_average("pct_team_is_supervisors")}%) supervisor(s), not including the team’s supervisor
+
+The following table contains all teams in the department. It’s pretty dense with statistics, but you can sort it to surface interesting insights. For example:
+
+- `pct_max`: This allows us to see how homogenous (or not!) a team’s classification groups are. First, we calculate the percentage of the team’s positions having a distinct classification group. The highest percentage is `pct_max`. By sorting `pct_max` from low to high, we can see which teams are most heterogenous (made up of a number of different classifications). _(This is the default sort order.)_
+
+	These teams _tend_ to be higher up in the department (with a lower `ranks_from_top`, leaving aside `ranks_from_top = 0`, as those can often reflect [missing links due to inferred positions](/inferred-positions#what%E2%80%99s-the-impact-on-analysis%3F)) and led by an executive or similarly senior position, the disparate classifications in a department converging as they move up the hierarchy.
+- `pct_team_is_supervisors`: This allows us to see how much of a team might be considered “working level”, with no direct managerial responsibilities. Sorting from high to low, we can see which teams are composed mostly / entirely of other supervisors—again, this tends to correspond with the team’s seniority within the departmental hierarchy.
+- `n_supervised_of_group_*`: This shows on a _number_ basis how many people are supervised from different groups in a team. It’s the number counterpart to `pct_*`. If a team has `n_supervised_of_group_min = 1` and `n_supervised_of_group_max = 20`, that means there’s an employee with a unique classification on the team, as well as 20 employees with a different classification. There could be other groups, too, but this gives a sense of the overall distribution.
+
+```js
+view(Inputs.table(team_characteristics, {
+	sort: 'pct_max'
+}))
+```
+
+<div class="tip">
+	<p>If there’s a team that interests you, plug the <code>supervisor_gid</code> into <a href="#supervisor-of-interest-(and-departmental-structure)">the “Supervisor of interest” section’s input</a> to further explore the team and related positions.</p> 
+</div>
+
+```js
+const team_characteristics = aq.from(departmental_positions)
+  .groupby("supervisor_gid", "group")
+  .count()
+  .groupby("supervisor_gid")
+  .derive({
+    percent: d => aq.op.round(d.count / aq.op.sum(d.count) * 1000) / 10
+  })
+  .rollup({
+    n_supervised: aq.op.sum("count"),
+    n_groups: aq.op.count(),
+    groups: aq.op.array_agg("group"),
+    pct_min: aq.op.min("percent"),
+    pct_avg: d => aq.op.round(aq.op.average(d.percent) * 10) / 10,
+    pct_max: aq.op.max("percent"),
+    n_supervised_of_group_min: aq.op.min("count"),
+    n_supervised_of_group_avg: d => aq.op.round(aq.op.average(d.count) * 10) / 10,
+    n_supervised_of_group_max: aq.op.max("count")
+  })
+  .join_left(
+    aq.from(departmental_positions)
+      .groupby("supervisor_gid", "is_supervisor")
+      .count()
+      .groupby("supervisor_gid")
+      .derive({
+        percent: d => aq.op.round(d.count / aq.op.sum(d.count) * 1000) / 10
+      })
+      .impute(
+        {
+          count: () => 0,
+          percent: () => 0
+        },
+        {
+          expand: ["is_supervisor"]
+        }
+      )
+      .orderby("supervisor_gid", "is_supervisor")
+      .filter(d => d.is_supervisor)
+      .rename({ count: "n_supervisors_on_team", percent: "pct_team_is_supervisors" })
+      .select(aq.not("is_supervisor"))
+  )
+  .join_left(
+    aq.from(departmental_supervisors)
+      .select("position_gid", "title", "branch_directorate_division", "group", "level", "ranks_from_top", "reports_total"),
+    ["supervisor_gid", "position_gid"]
+  )
+  .params({ remove_teams_of_one })
+  .filter(d => remove_teams_of_one ? d.n_supervised > 1 : true)
+  .filter(d => d.supervisor_gid != null)
+  .derive({group_level: d => `${d.group}-${d.level}`})
+  .select(['supervisor_gid', 'group_level', 'ranks_from_top', 'reports_total', aq.all()])
+  .select([aq.not('position_gid', 'group', 'level')])
 ```
 
 
