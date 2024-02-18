@@ -109,6 +109,35 @@ Their counts by classification and group / level are as follows:
 	</div>
 </div>
 
+The number of people reporting to a supervisor can be an interesting indicator. We can count it in three ways:
+
+- `direct`: positions with a 1:1 reporting relationship with the supervisor
+- `indirect`: positions whose manager (or manager’s manager, or so on) have a 1:1 reporting relationship with the supervisor (varying levels of “skip level”, in other words)
+- `total`: `direct` and `indirect` combined
+
+Here, we’ll report on `direct` and `total`. You can see `indirect` in the dataset itself.
+
+```js
+{
+  const supervisors_with_most_total = departmental_supervisors
+    .sort((positionA, positionB) => positionB.reports_total - positionA.reports_total)
+    .slice(0, 10)
+
+  const supervisors_with_most_direct = departmental_supervisors
+    .sort((positionA, positionB) => positionB.reports_direct - positionA.reports_direct)
+    .slice(0, 10)
+
+  const describeSupervisorReports = (supervisor, reports_type) => `The supervisor with the most ${reports_type} reports is ${supervisor["position_gid"]} (Title: “${supervisor["title"]}” / BDD: “${supervisor["branch_directorate_division"]}”), with ${supervisor["reports_" + reports_type].toLocaleString()} ${reports_type} reports.`
+
+  display(html`
+<ul>
+	<li>${describeSupervisorReports(supervisors_with_most_direct[0], "direct")}</li>
+	<li>${describeSupervisorReports(supervisors_with_most_total[0], "total")}</li>
+</ul>
+`)
+}
+```
+
 
 
 ```js
