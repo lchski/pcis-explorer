@@ -24,10 +24,25 @@ Depending on your analysis, you may want to only consider the department as it â
 const limit_to_occupied_positions = view(Inputs.toggle({label: "Limit tables and statistics to occupied positions", value: false}))
 ```
 
+## Top ten
+
+### Job titles
+
 ```js
 view(PCIS.top_n_for_grouping_var("title", departmental_positions, limit_to_occupied_positions, 10))
 ```
 
+### Places of work
+
+```js
+view(PCIS.top_n_for_grouping_var("work_location", departmental_positions, limit_to_occupied_positions, 10))
+```
+
+### Classifications
+
+```js
+view(PCIS.top_n_for_grouping_var("group", departmental_positions, limit_to_occupied_positions, 10))
+```
 
 
 
