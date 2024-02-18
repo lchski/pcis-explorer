@@ -42,8 +42,10 @@ export function org_to_analyze_input(org_codes) {
 		label: "Organization to analyze",
 		format: (org_code_to_format) => {
 		  const org_being_rendered = org_codes.find((org_code) => org_code.organization_code === org_code_to_format)
+
+		  const positions_descriptor = (org_being_rendered.n_positions == 1) ? 'position' : 'positions'
 	  
-		  return `${org_being_rendered.organization} (${org_being_rendered.n_positions.toLocaleString()} positions)`
+		  return `${org_being_rendered.organization} (${org_being_rendered.n_positions.toLocaleString()} ${positions_descriptor})`
 		}
 	  })
 }
