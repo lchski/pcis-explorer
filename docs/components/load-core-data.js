@@ -85,14 +85,15 @@ export function top_n_for_grouping_var(grouping_var, positions_to_analyze, limit
 		.orderby(aq.desc("count"))
 		.derive({ row: aq.op.row_number() })
 		.select(['row', aq.all()])
+		.rename({ count: "#", percent: "%" })
 		.slice(0, n)
 
 	if (return_view) {
 		return Inputs.table(top_n, {
 			width: {
 				row: 25,
-				count: 100,
-				percent: 75
+				count: 75,
+				percent: 25
 			}
 		})
 	}

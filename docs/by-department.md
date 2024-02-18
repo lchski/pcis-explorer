@@ -18,7 +18,7 @@ PCIS.top_n_for_grouping_var("position_status", departmental_positions, null, 10,
 
 <p class="tip"><code>null</code> or blank entries usually reflect “inferred positions”, created to help fill in the dataset. For more, <a href="./inferred-positions">see the explanation of inferred positions</a>.</p>
 
-## Counting
+## Summary tables
 
 Let’s explore the department’s positions by looking at the count of values for a few key variables.
 
@@ -74,6 +74,40 @@ view(PCIS.top_n_for_grouping_var(you_choose_top_10_grouping_var, departmental_po
 ```
 
 
+
+## Supervisors
+
+```js
+const departmental_supervisors = departmental_positions
+	.filter(d => d.is_supervisor)
+```
+
+There are ${departmental_supervisors.length.toLocaleString()} supervisors at ${org_to_analyze_label}. Here’s how their position statuses break down:
+
+```js
+PCIS.top_n_for_grouping_var("position_status", departmental_supervisors, null, departmental_supervisors.length, false)
+```
+
+As above, you can toggle this checkbox to limit the following tables and statistics to only occupied supervisor positions (this will also exclude _all_ inferred positions):
+
+```js
+const limit_to_occupied_supervisor_positions = view(Inputs.toggle({label: "Limit tables and statistics to occupied supervisor positions", value: false}))
+```
+
+Their counts by classification and group / level are as follows:
+
+<div class="grid grid-cols-2">
+	<div class="card" style="padding: 0;">
+		${
+			PCIS.top_n_for_grouping_var("group", departmental_supervisors, limit_to_occupied_supervisor_positions, departmental_supervisors.length)
+		}
+	</div>
+	<div class="card" style="padding: 0;">
+		${
+			PCIS.top_n_for_grouping_var("group_level", departmental_supervisors, limit_to_occupied_supervisor_positions, departmental_supervisors.length)
+		}
+	</div>
+</div>
 
 
 
