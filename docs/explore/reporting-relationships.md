@@ -191,9 +191,131 @@ _(The above is more or less complete, while the remaining portions are a work in
 	<p>So, while they’re likely of decent accuracy (and certainly are reasonable for indicating trends, if anything), as ever, please take them with a critical eye!</p>
 </div>
 
+### ${supervisor_group_of_interest}-classified supervisors in the core
+
+```js
+{
+  const n_positions_with_supervisor_group = positions_with_supervisor_group.length;
+
+  const pct_supervisors_of_group = Math.floor(supervisors.length / n_positions_with_supervisor_group * 1000) / 10
+
+  let supervisory_frequency = "uncommon"
+
+  if (pct_supervisors_of_group > 30 & pct_supervisors_of_group < 70) {
+    supervisory_frequency = "relatively common"
+  } else if (pct_supervisors_of_group >= 70) {
+    supervisory_frequency = "quite common"
+  }
+  
+  display(html`<strong>How common is it for ${supervisor_group_of_interest} positions to be supervisors?</strong> There are ${supervisors.length.toLocaleString()} ${supervisor_group_of_interest}-classified supervisors in the core. This is ${pct_supervisors_of_group}% of the ${n_positions_with_supervisor_group.toLocaleString()} total ${supervisor_group_of_interest} positions, suggesting it’s ${supervisory_frequency}.`)
+}
+```
+
+The number of people reporting to a supervisor can be an interesting indicator. We can count it in three ways (which we’ll break out by position level in the tables that follow, since that’s often an important factor):
+
+- `direct`: positions with a 1:1 reporting relationship with the supervisor
+- `indirect`: positions whose manager (or manager’s manager, or so on) have a 1:1 reporting relationship with the supervisor (varying levels of “skip level”, in other words)
+- `total`: `direct` and `indirect` combined
+
+Let’s start with direct reports:
+
+```js
+view(Inputs.table(
+	aq.from(supervisors)
+		.groupby('level')
+		.rollup({
+			count: aq.op.count(),
+			min_reports: d => aq.op.min(d.reports_direct),
+			med_reports: d => Math.round(aq.op.median(d.reports_direct)),
+			avg_reports: d => Math.round(aq.op.average(d.reports_direct)),
+			max_reports: d => aq.op.max(d.reports_direct),
+		})
+		.orderby(aq.desc('level'))
+))
+```
+
+And what about total reports? (We’ll not bother with indirect reports, though it’s available in the underlying data if you’re interested.)
+
+```js
+view(Inputs.table(
+	aq.from(supervisors)
+		.groupby('level')
+		.rollup({
+			count: aq.op.count(),
+			min_reports: d => aq.op.min(d.reports_total),
+			med_reports: d => Math.round(aq.op.median(d.reports_total)),
+			avg_reports: d => Math.round(aq.op.average(d.reports_total)),
+			max_reports: d => aq.op.max(d.reports_total),
+		})
+		.orderby(aq.desc('level'))
+))
+```
+
+### ${supervisor_group_of_interest}-classified supervisors at ${org_to_analyze_label}
+
+Direct reports:
+
+```js
+view(Inputs.table(
+	aq.from(supervisors)
+		.params({ org_to_analyze })
+		.filter(d => d.organization_code == org_to_analyze)
+		.groupby('level')
+		.rollup({
+			count: aq.op.count(),
+			min_reports: d => aq.op.min(d.reports_direct),
+			med_reports: d => Math.round(aq.op.median(d.reports_direct)),
+			avg_reports: d => Math.round(aq.op.average(d.reports_direct)),
+			max_reports: d => aq.op.max(d.reports_direct),
+		})
+		.orderby(aq.desc('level'))
+))
+```
+
+Total reports:
+
+```js
+view(Inputs.table(
+	aq.from(supervisors)
+		.params({ org_to_analyze })
+		.filter(d => d.organization_code == org_to_analyze)
+		.groupby('level')
+		.rollup({
+			count: aq.op.count(),
+			min_reports: d => aq.op.min(d.reports_total),
+			med_reports: d => Math.round(aq.op.median(d.reports_total)),
+			avg_reports: d => Math.round(aq.op.average(d.reports_total)),
+			max_reports: d => aq.op.max(d.reports_total),
+		})
+		.orderby(aq.desc('level'))
+))
+```
+
+**Here are all the ${supervisor_group_of_interest}-classified supervisors at ${org_to_analyze_label}.** This table includes various columns on their number of reports. You can use a `supervisor_gid` found in the positions table above as a `position_gid` in this table, to find the supervisor for a given position.
+
+```js
+view(Inputs.table(departmental_supervisors))
+```
+
 <!-- # Loading code -->
 
 <!-- ## Specific -->
+
+```js
+const positions_with_supervisor_group = PCIS.query_positions_graph_db(
+  `SELECT * FROM nodes WHERE "group" = '${supervisor_group_of_interest}'`
+)
+```
+
+```js
+const supervisors = positions_with_supervisor_group
+	.filter(d => d.is_supervisor)
+
+const departmental_supervisors = supervisors
+	.filter((position) => position.organization_code == org_to_analyze)
+```
+
+
 
 ```js
 const departmental_positions_with_supervisor_and_group_of_interest = departmental_positions_with_supervisor_of_interest
@@ -220,6 +342,7 @@ const org_codes_with_supervisor = aq.from(positions_with_supervisor_of_interest)
   .count()
   .rename({ count: "n_positions" })
   .orderby("organization")
+  .filter(d => d.organization !== null)
   .objects()
 ```
 
@@ -243,6 +366,10 @@ const groups = groups_qry
 	.filter(d => d.group !== null)
 ```
 
+
+## TODO: More about (chosen group) to (chosen supervisor group) in the GC
+
+e.g., this stat, but in the GC: Of the PM-supervised positions at Infrastructure Canada, 5 are EC positions. The EC group makes up 3.9% of positions supervised by PM-classified supervisors at Infrastructure Canada.
 
 <!-- ## Generic -->
 
