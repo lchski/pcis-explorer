@@ -58,9 +58,16 @@ export function org_to_analyze_label(org_codes, org_to_analyze) {
 
 
 export async function departmental_positions(org_to_analyze) {
-	return await positions_graph_db.query(
+	const qry = await positions_graph_db.query(
 		`SELECT * FROM nodes WHERE organization_code = '${org_to_analyze}'`
 	)
+
+	return aq.from(qry)
+		.derive({
+			group_level: (d) => `${d.group}-${d.level}`,
+			supervisor_group_level: (d) => `${d.supervisor_group}-${d.supervisor_level}`,
+		})
+		.objects()
 }
 
 
@@ -76,10 +83,18 @@ export function top_n_for_grouping_var(grouping_var, positions_to_analyze, limit
 		.count()
 		.derive({ percent: d => Math.round(d.count / aq.op.sum(d.count) * 1000) / 10 })
 		.orderby(aq.desc("count"))
+		.derive({ row: aq.op.row_number() })
+		.select(['row', aq.all()])
 		.slice(0, n)
 
 	if (return_view) {
-		return Inputs.table(top_n)
+		return Inputs.table(top_n, {
+			width: {
+				row: 25,
+				count: 100,
+				percent: 75
+			}
+		})
 	}
 
 	return top_n
