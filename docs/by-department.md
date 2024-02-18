@@ -224,6 +224,90 @@ At ${team_of_interest.degrees_of_reporting} degrees of reporting, ${team_of_inte
 view(Inputs.table(positions_on_team_to_nth_degree))
 ```
 
+```js
+const toi_show_org_chart = view(Inputs.toggle({label: `Show the hierarchical org chart for team of interest?`, value: false}))
+```
+
+
+```js
+const positions_on_team_to_nth_degree_graph = d3
+  .stratify()
+  .id(d => d.position_gid)
+  .parentId(d => d.supervisor_gid)
+  (
+    positions_on_team_to_nth_degree
+      .derive({// we rewrite the supervisor_gid for the first position—assumed to be the root, because we order_by `total_reports`, to be null, so there aren't any broken links when d3.hierarchy creates its links
+        supervisor_gid: d => aq.op.row_number() === 1 ? null : d.supervisor_gid
+      })
+  )
+
+function get_positions_on_team_to_nth_degree_graph_root() { let i = 0; return d3.hierarchy(positions_on_team_to_nth_degree_graph).eachBefore(d => d.index = i++); }
+
+const positions_on_team_to_nth_degree_graph_root = get_positions_on_team_to_nth_degree_graph_root()
+```
+
+```js
+display(toi_show_org_chart ?
+	IndentedTree(positions_on_team_to_nth_degree_graph_root, {
+	label: d => `${d.data.title} (${d.data.group}-${d.data.level})`,
+	title: d => `ID: ${d.data.position_gid}\nReports, direct: ${d.data.reports_direct}\nReports, indirect: ${d.data.reports_indirect}`,
+	columns: [
+		// {// INACCURATE: the graph sums already
+		//   label: "Supervised salary, total", 
+		//   value: d => d.data.supervised_salary_total,
+		//   format: (value, d) => value,
+		//   x: 400,
+		//   type: "other"
+		// },
+		{// I’d be lying if I said I understood what jankery I was up to here, why I need `d.data.data` for this to work
+		label: "Branch / Dir. / Div.", 
+		value: d => d.data.data.branch_directorate_division, // note that this is basically ignored, the rendering is happening in `format`
+		format: (value, d) => d.data.data.branch_directorate_division,
+		x: 500,
+		type: "other",
+		textAlign: "start"
+		},
+		// {
+		//   label: "Pay (cumulative)", 
+		//   value: d => d.data.pay_max,
+		//   format: (value, d) => value.toLocaleString(),
+		//   x: 600
+		// },
+		// {
+		//   label: "Count", 
+		//   value: d => d.children ? 0 : 1, 
+		//   format: (value, d) => d.children ? value.toLocaleString() : "-", 
+		//   x: 650
+		// },
+		{
+		label: "Reports (total)", 
+		value: d => d.data.data.reports_total, 
+		format: (value, d) => d.data.data.reports_total > 0 ? d.data.data.reports_total.toLocaleString() : "-", 
+		x: 680,
+		type: "other"
+		},
+		{// I’d be lying if I said I understood what jankery I was up to here, why I need `d.data.data` for this to work
+		label: "Position ID", 
+		value: d => d.data.data.position_gid, // note that this is basically ignored, the rendering is happening in `format`
+		format: (value, d) => d.data.data.position_gid,
+		x: 700,
+		type: "other",
+		textAlign: "start"
+		},
+		{// I’d be lying if I said I understood what jankery I was up to here, why I need `d.data.data` for this to work
+		label: "Supervisor ID", 
+		value: d => d.data.data.supervisor_gid, // note that this is basically ignored, the rendering is happening in `format`
+		format: (value, d) => d.data.data.supervisor_gid,
+		x: 770,
+		type: "other",
+		textAlign: "start"
+		}
+	]
+	})
+: html`<p><em>“Show hierarchical org chart” checkbox not checked.</em></p>`)
+```
+
+
 
 ```js
 import * as PCIS from "./components/load-core-data.js"
@@ -243,4 +327,90 @@ const org_codes = PCIS.org_codes()
 
 ```js
 const gc_positions = PCIS.gc_positions()
+```
+
+```js
+// Render method from: https://observablehq.com/@d3/indented-tree (ISC license)
+// Function format adapted from: https://observablehq.com/@d3/tree#Tree (ISC license)
+function IndentedTree(root, {
+  label, // given a node d, returns the display name
+  title, // given a node d, returns its hover text
+  nodeSize = 17, // radius of nodes
+  columns = []
+} = {}) {
+  const nodes = root.descendants();
+
+  const L = label == null ? null : nodes.map(d => label(d.data, d));
+  const T = title == null ? null : nodes.map(d => title(d.data, d));
+
+  const svg = d3.create("svg")
+      .attr("viewBox", [-nodeSize / 2, -nodeSize * 3 / 2, width, (nodes.length + 1) * nodeSize]) // width is undefined??
+      .attr("font-family", "sans-serif")
+      .attr("font-size", 10)
+      .style("overflow", "visible");
+
+  const link = svg.append("g")
+      .attr("fill", "none")
+      .attr("stroke", "#999")
+    .selectAll("path")
+    .data(root.links())
+    .join("path")
+      .attr("d", d => `
+        M${d.source.depth * nodeSize},${d.source.index * nodeSize}
+        V${d.target.index * nodeSize}
+        h${nodeSize}
+      `);
+
+  const node = svg.append("g")
+    .selectAll("g")
+    .data(nodes)
+    .join("g")
+      .attr("transform", d => `translate(0,${d.index * nodeSize})`);
+
+  node.append("circle")
+      .attr("cx", d => d.depth * nodeSize)
+      .attr("r", 2.5)
+      .attr("fill", d => d.children ? null : "#999");
+
+  node.append("text")
+      .attr("dy", "0.32em")
+      .attr("x", d => d.depth * nodeSize + 6)
+      .text((d, i) => L[i]);
+
+  node.append("title")
+      .text((d, i) => T[i]);
+
+  for (const {label, value, format, x, type, textAlign} of columns) {
+    const columnType = type == null ? "numericSum" : type;
+    const textAnchor = textAlign == null ? "end" : textAlign;
+    
+    svg.append("text")
+        .attr("dy", "0.32em")
+        .attr("y", -nodeSize)
+        .attr("x", x)
+        .attr("text-anchor", textAnchor)
+        .attr("font-weight", "bold")
+        .text(label);
+
+    if (columnType == "numericSum") {
+      node.append("text")
+        .attr("dy", "0.32em")
+        .attr("x", x)
+        .attr("text-anchor", textAnchor)
+        .attr("fill", d => d.children ? null : "#555")
+      .data(root.copy().sum(value).descendants())
+        .text(d => format(d.value, d));
+    } else {
+      node.append("text")
+        .attr("dy", textAnchor)
+        .attr("x", x)
+        .attr("text-anchor", textAnchor)
+        .attr("fill", d => d.children ? null : "#555")
+      .data(root.copy())
+        .text(d => format(d.value, d));
+    }
+  }
+
+  return svg.node();
+}
 ```
