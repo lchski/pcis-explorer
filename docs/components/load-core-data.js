@@ -74,9 +74,6 @@ export async function departmental_positions(org_to_analyze) {
 
 export function top_n_for_grouping_var(grouping_var, positions_to_analyze, limit_to_occupied_filter, n = 10, apply_limit_to_occupied_filter = true, return_view = true) {
 	const top_n = aq.from(positions_to_analyze)
-		.derive({
-			[grouping_var]: aq.escape(d => String(d[grouping_var])) // to convert "null" values to a string
-		})
 		.params({ apply_limit_to_occupied_filter, limit_to_occupied_filter })
 		.filter(d => apply_limit_to_occupied_filter ? (limit_to_occupied_filter ? d.position_status == "Occupied" : true) : true)
 		.groupby(grouping_var)
