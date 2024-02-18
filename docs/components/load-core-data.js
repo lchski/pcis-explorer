@@ -41,15 +41,15 @@ export function org_to_analyze_input(org_codes) {
 	return Inputs.select(org_codes.map((d) => d.organization_code), {
 		label: "Organization to analyze",
 		format: (org_code_to_format) => {
-		  const org_being_rendered = org_codes.find((org_code) => org_code.organization_code === org_code_to_format)
+			const org_being_rendered = org_codes.find((org_code) => org_code.organization_code === org_code_to_format)
 
-		  const positions_descriptor = (org_being_rendered.n_positions == 1) ? 'position' : 'positions'
-	  
-		  return `${org_being_rendered.organization} (${org_being_rendered.n_positions.toLocaleString()} ${positions_descriptor})`
+			const positions_descriptor = (org_being_rendered.n_positions == 1) ? 'position' : 'positions'
+
+			return `${org_being_rendered.organization} (${org_being_rendered.n_positions.toLocaleString()} ${positions_descriptor})`
 		}
-	  })
+	})
 }
-  
+
 
 export function org_to_analyze_label(org_codes, org_to_analyze) {
 	return org_codes.filter((org) => org.organization_code == org_to_analyze)[0]['organization']
@@ -70,17 +70,17 @@ export function top_n_for_grouping_var(grouping_var, positions_to_analyze, limit
 		.derive({
 			[grouping_var]: aq.escape(d => String(d[grouping_var])) // to convert "null" values to a string
 		})
-	  .params({ apply_limit_to_occupied_filter, limit_to_occupied_filter })
-	  .filter(d => apply_limit_to_occupied_filter ? (limit_to_occupied_filter ? d.position_status == "Occupied" : true) : true)
-	  .groupby(grouping_var)
-	  .count()
-	  .derive({ percent: d => Math.round(d.count / aq.op.sum(d.count) * 1000) / 10 })
-	  .orderby(aq.desc("count"))
-	  .slice(0, n)
-  
+		.params({ apply_limit_to_occupied_filter, limit_to_occupied_filter })
+		.filter(d => apply_limit_to_occupied_filter ? (limit_to_occupied_filter ? d.position_status == "Occupied" : true) : true)
+		.groupby(grouping_var)
+		.count()
+		.derive({ percent: d => Math.round(d.count / aq.op.sum(d.count) * 1000) / 10 })
+		.orderby(aq.desc("count"))
+		.slice(0, n)
+
 	if (return_view) {
-	  return Inputs.table(top_n)
+		return Inputs.table(top_n)
 	}
-	
+
 	return top_n
-  }
+}
