@@ -16,6 +16,10 @@ export async function gc_positions() {
 	);
 }
 
+export async function query_positions_graph_db(qry) {
+	return await positions_graph_db.query(qry);
+}
+
 
 
 export async function org_codes() {
