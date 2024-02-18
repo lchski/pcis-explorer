@@ -16,7 +16,7 @@ There are ${departmental_positions.length.toLocaleString()} positions at ${org_t
 PCIS.top_n_for_grouping_var("position_status", departmental_positions, null, 10, false)
 ```
 
-<p class="tip"><code>null</code> or blank entries usually reflect “inferred positions”, created to help fill in the dataset. For more, <a href="./inferred-positions">see the explanation of inferred positions</a>.</p>
+<p class="tip"><code>null</code> or blank entries usually reflect “inferred positions”, created to help fill in the dataset. For more, <a href="./about/inferred-positions">see the explanation of inferred positions</a>.</p>
 
 ## Summary tables
 
@@ -148,7 +148,7 @@ Here, we’ll report on `direct` and `total`. You can see `indirect` in the data
 
 To focus on a particular supervisor and their team(s), input their `position_gid` (`supervisor_gid` if you’re finding them from the row of someone reporting to them) below as the “supervisor of interest”. Then, select the “degrees of reporting” you’re interested in: `1` will show you just the positions reporting directly to that supervisor (i.e., their immediate team), `2` will show you who reports to _those_ positions, and so on.
 
-By default, this is set to the position in the department with the most total reports—usually the most senior deputy minister, or an inferred position representing them or the minister themselves. _Due to [the limitations of inferred positions](/inferred-positions#what%E2%80%99s-the-impact-on-analysis%3F), maxing out the degrees of reporting for the position with the most total reports won’t always get you everyone in the department—often there are some reporting trees that don’t connect, due to data quality issues._
+By default, this is set to the position in the department with the most total reports—usually the most senior deputy minister, or an inferred position representing them or the minister themselves. _Due to [the limitations of inferred positions](/about/inferred-positions#what%E2%80%99s-the-impact-on-analysis%3F), maxing out the degrees of reporting for the position with the most total reports won’t always get you everyone in the department—often there are some reporting trees that don’t connect, due to data quality issues._
 
 This populates an interactive data table, which you can use to further explore the data.
 
@@ -331,7 +331,7 @@ The following table contains all teams in the department. It’s pretty dense wi
 
 - `pct_max`: This allows us to see how homogenous (or not!) a team’s classification groups are. First, we calculate the percentage of the team’s positions having a distinct classification group. The highest percentage is `pct_max`. By sorting `pct_max` from low to high, we can see which teams are most heterogenous (made up of a number of different classifications). _(This is the default sort order.)_
 
-	These teams _tend_ to be higher up in the department (with a lower `ranks_from_top`, leaving aside `ranks_from_top = 0`, as those can often reflect [missing links due to inferred positions](/inferred-positions#what%E2%80%99s-the-impact-on-analysis%3F)) and led by an executive or similarly senior position, the disparate classifications in a department converging as they move up the hierarchy.
+	These teams _tend_ to be higher up in the department (with a lower `ranks_from_top`, leaving aside `ranks_from_top = 0`, as those can often reflect [missing links due to inferred positions](/about/inferred-positions#what%E2%80%99s-the-impact-on-analysis%3F)) and led by an executive or similarly senior position, the disparate classifications in a department converging as they move up the hierarchy.
 - `pct_team_is_supervisors`: This allows us to see how much of a team might be considered “working level”, with no direct managerial responsibilities. Sorting from high to low, we can see which teams are composed mostly / entirely of other supervisors—again, this tends to correspond with the team’s seniority within the departmental hierarchy.
 - `n_supervised_of_group_*`: This shows on a _number_ basis how many people are supervised from different groups in a team. It’s the number counterpart to `pct_*`. If a team has `n_supervised_of_group_min = 1` and `n_supervised_of_group_max = 20`, that means there’s an employee with a unique classification on the team, as well as 20 employees with a different classification. There could be other groups, too, but this gives a sense of the overall distribution.
 
@@ -402,7 +402,7 @@ const team_characteristics = aq.from(departmental_positions)
 
 
 ```js
-import * as PCIS from "./components/load-core-data.js"
+import * as PCIS from "../components/load-core-data.js"
 ```
 
 ```js

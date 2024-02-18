@@ -187,7 +187,7 @@ const departmental_inferred_positions = inferred_positions
 ```
 
 ```js
-import * as PCIS from "./components/load-core-data.js"
+import * as PCIS from "../components/load-core-data.js"
 ```
 
 ```js

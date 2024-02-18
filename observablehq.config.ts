@@ -16,6 +16,25 @@ export default {
   //   }
   // ],
 
+  pages: [
+    {
+      name: "Explore by…",
+      pages: [
+        {name: "Department", path: "/explore/department"},
+        {name: "Classification", path: "/explore/classification"},
+        {name: "Work location", path: "/explore/work-location"},
+      ]
+    },
+    {
+      name: "About the data",
+      pages: [
+        {name: "What’s ”PCIS+”?", path: "/about/pcis"},
+        {name: "Caution: Inferred positions", path: "/about/inferred-positions"},
+        {name: "Get the data", path: "/about/datasets"},
+      ]
+    }
+  ],
+
   // Some additional configuration options and their defaults:
   theme: "air", // try "light", "dark", "slate", etc.
   // header: "", // what to show in the header (HTML)
