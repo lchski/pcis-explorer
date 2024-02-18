@@ -140,6 +140,91 @@ Here, we’ll report on `direct` and `total`. You can see `indirect` in the data
 
 
 
+### Teams reporting to a position
+
+To focus on a particular supervisor and their team(s), input their `position_gid` (`supervisor_gid` if you’re finding them from the row of someone reporting to them) below as the “supervisor of interest”. Then, select the “degrees of reporting” you’re interested in: `1` will show you just the positions reporting directly to that supervisor (i.e., their immediate team), `2` will show you who reports to _those_ positions, and so on.
+
+By default, this is set to the position in the department with the most total reports—usually the most senior deputy minister, or an inferred position representing them or the minister themselves. _Due to [the limitations of inferred positions](/inferred-positions#what%E2%80%99s-the-impact-on-analysis%3F), maxing out the degrees of reporting for the position with the most total reports won’t always get you everyone in the department—often there are some reporting trees that don’t connect, due to data quality issues._
+
+This populates an interactive data table, which you can use to further explore the data.
+
+
+```js
+const team_of_interest = view(Inputs.form({
+	team_supervisor_gid: Inputs.text({
+		label: "Supervisor of interest",
+		value: aq.from(aq.from(departmental_supervisors).orderby(aq.desc("reports_total"))).get("position_gid")
+	}),
+	degrees_of_reporting: Inputs.range(
+		[
+			1,
+			aq.from(departmental_positions).rollup({max: d => aq.op.max(d.ranks_from_top)}).get('max')
+		],
+		{label: "Degrees of reporting", step: 1, value: 1}
+	)
+}))
+```
+
+```js
+{
+	const supervisor_of_interest = aq.from(departmental_supervisors)
+		.params({ team_of_interest })
+		.filter(d => d.position_gid == team_of_interest.team_supervisor_gid)
+		.object()
+
+	if ("undefined" === typeof supervisor_of_interest.position_gid) {
+		display(
+			html`<p>No supervisor position found with ID ${team_of_interest.team_supervisor_gid}.</p>`
+		)
+	} else {
+		display(
+			html`<p>${team_of_interest.team_supervisor_gid} has the title “${supervisor_of_interest.title}” in the “${supervisor_of_interest.branch_directorate_division}” <abbr title="branch, directorate, or division">BDD</abbr>, with group / level ${supervisor_of_interest.group}-${supervisor_of_interest.level}. They have ${supervisor_of_interest.reports_direct} direct reports and ${supervisor_of_interest.reports_total} total reports. They report to ${supervisor_of_interest.supervisor_gid} (${supervisor_of_interest.supervisor_group}-${supervisor_of_interest.supervisor_level}).</p>`
+		)
+	}  	
+}
+```
+
+```js
+function get_positions_on_team_to_nth_degree() {
+  let degrees_of_reporting_i = 1
+  
+  const initial_team_positions = aq.from(departmental_supervisors)
+    .params({ team_of_interest })
+    .filter(d => d.position_gid == team_of_interest.team_supervisor_gid)
+
+  let supervisor_gids = [...new Set(initial_team_positions
+    .array('position_gid'))]
+
+  while (degrees_of_reporting_i < team_of_interest.degrees_of_reporting) {
+    const supervisor_gids_for_nth_degree = aq.from(departmental_supervisors)
+      .params({ supervisor_gids })
+      .filter(d => aq.op.includes(supervisor_gids, d.supervisor_gid))
+      .array('position_gid')
+
+    supervisor_gids = [...new Set([...supervisor_gids, ...supervisor_gids_for_nth_degree])]
+    
+    degrees_of_reporting_i++
+  }
+
+  const responsive_supervisor_gids = [...new Set([team_of_interest.team_supervisor_gid, ...supervisor_gids])]
+
+  return aq.from(departmental_positions)
+    .params({ responsive_supervisor_gids })
+    .filter(d => aq.op.includes(responsive_supervisor_gids, d.position_gid) || aq.op.includes(responsive_supervisor_gids, d.supervisor_gid))
+    .orderby(aq.desc('reports_total'))
+    .select(aq.not('organization_code', 'organization', 'geographic_location_code', 'pay_max', 'node_id', 'org_node_id', aq.matches('_salary_')))
+}
+
+const positions_on_team_to_nth_degree = get_positions_on_team_to_nth_degree()
+```
+
+At ${team_of_interest.degrees_of_reporting} degrees of reporting, ${team_of_interest.team_supervisor_gid} has ${(positions_on_team_to_nth_degree.objects().length - 1).toLocaleString()} total reports.
+
+```js
+view(Inputs.table(positions_on_team_to_nth_degree))
+```
+
+
 ```js
 import * as PCIS from "./components/load-core-data.js"
 ```

@@ -29,7 +29,7 @@ const inferred_positions_with_classification = inferred_positions
 
 
 
-## What’s the imapct on analysis?
+## What’s the impact on analysis?
 
 There are some important pieces missing, which affect some of the analyses (though we try to mention where this is relevant):
 
