@@ -22,6 +22,7 @@ export default {
       pages: [
         {name: "Department", path: "/explore/department"},
         {name: "Classification", path: "/explore/classification"},
+        {name: "Reporting relationships", path: "/explore/reporting-relationships"},
         {name: "Work location", path: "/explore/work-location"},
       ]
     },
