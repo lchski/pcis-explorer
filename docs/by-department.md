@@ -1,5 +1,4 @@
 ---
-theme: report
 title: Explore by department
 ---
 

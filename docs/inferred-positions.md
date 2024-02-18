@@ -1,5 +1,4 @@
 ---
-theme: [air]
 title: Inferred positions
 ---
 
