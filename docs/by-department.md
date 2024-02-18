@@ -28,30 +28,36 @@ Depending on your analysis, you may want to only consider the department as it �
 const limit_to_occupied_positions = view(Inputs.toggle({label: "Limit tables and statistics to occupied positions", value: false}))
 ```
 
-### Job titles
+<div class="card" style="padding: 0;">
+	<h3 style="padding: 0.5rem 1rem; font-style: italic;">Job titles</h3>
+	${
+		PCIS.top_n_for_grouping_var("title", departmental_positions, limit_to_occupied_positions, departmental_positions.length)
+	}
+</div>
+
+<div class="grid grid-cols-2">
+	<div class="card" style="padding: 0;">
+		<h3 style="padding: 0.5rem 1rem; font-style: italic;">Places of work</h3>
+		${PCIS.top_n_for_grouping_var("work_location", departmental_positions, limit_to_occupied_positions, departmental_positions.length)}
+	</div>
+	<div class="card" style="padding: 0;">
+		<h3 style="padding: 0.5rem 1rem; font-style: italic;">Classifications</h3>
+		${PCIS.top_n_for_grouping_var("group", departmental_positions, limit_to_occupied_positions, departmental_positions.length)}
+	</div>
+</div>
+
+
+<div class="card" style="padding: 0;">
+	<h3 style="padding: 0.5rem 1rem; font-style: italic;">You choose!</h3>
+	<div style="padding: 1rem; padding-top: 0; margin-top: -0.5rem;">
+		<p>Pick from any of the variables below (these are almost all the variables in the dataset, minus the ones that aren’t very meaningful to group and count by, and those already shown above):</p>
+		${you_choose_top_10_grouping_var_input}
+	</div>
+	${PCIS.top_n_for_grouping_var(you_choose_top_10_grouping_var, departmental_positions, limit_to_occupied_positions, departmental_positions.length)}
+</div>
 
 ```js
-view(PCIS.top_n_for_grouping_var("title", departmental_positions, limit_to_occupied_positions, departmental_positions.length))
-```
-
-### Places of work
-
-```js
-view(PCIS.top_n_for_grouping_var("work_location", departmental_positions, limit_to_occupied_positions, departmental_positions.length))
-```
-
-### Classifications
-
-```js
-view(PCIS.top_n_for_grouping_var("group", departmental_positions, limit_to_occupied_positions, departmental_positions.length))
-```
-
-### You choose!
-
-Pick from any of the variables below (these are almost all the variables in the dataset, minus the ones that aren’t very meaningful to group and count by, and those already shown above):
-
-```js
-const you_choose_top_10_grouping_var = view(Inputs.select([
+const you_choose_top_10_grouping_var_input = Inputs.select([
 	'group_level',
 	'branch_directorate_division',
 	'position_status',
@@ -66,11 +72,9 @@ const you_choose_top_10_grouping_var = view(Inputs.select([
 	'ranks_from_top',
 	'is_supervisor',
 	'inferred_position',
-]))
-```
+]);
 
-```js
-view(PCIS.top_n_for_grouping_var(you_choose_top_10_grouping_var, departmental_positions, limit_to_occupied_positions, departmental_positions.length))
+const you_choose_top_10_grouping_var = Generators.input(you_choose_top_10_grouping_var_input);
 ```
 
 
@@ -140,7 +144,7 @@ Here, we’ll report on `direct` and `total`. You can see `indirect` in the data
 
 
 
-### Teams reporting to a position
+## Teams and departmental structure
 
 To focus on a particular supervisor and their team(s), input their `position_gid` (`supervisor_gid` if you’re finding them from the row of someone reporting to them) below as the “supervisor of interest”. Then, select the “degrees of reporting” you’re interested in: `1` will show you just the positions reporting directly to that supervisor (i.e., their immediate team), `2` will show you who reports to _those_ positions, and so on.
 
