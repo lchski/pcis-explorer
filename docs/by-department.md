@@ -8,14 +8,7 @@ title: Explore by department
 
 
 ```js
-const org_to_analyze = view(Inputs.select(org_codes.map((d) => d.organization_code), {
-  label: "Organization to analyze",
-  format: (org_code_to_format) => {
-    const org_being_rendered = org_codes.find((org_code) => org_code.organization_code === org_code_to_format)
-
-    return `${org_being_rendered.organization} (${org_being_rendered.n_positions.toLocaleString()} positions)`
-  }
-}))
+const org_to_analyze = view(PCIS.org_to_analyze_input(org_codes))
 ```
 
 There are ${departmental_positions.length.toLocaleString()} positions at ${org_to_analyze_label}. Their status in PCIS+ on December 21, 2023, was as follows:
@@ -43,7 +36,7 @@ const limit_to_occupied_positions = view(Inputs.toggle({label: "Limit tables and
 ```
 
 ```js
-view(top_n_for_grouping_var("title", 10))
+view(PCIS.top_n_for_grouping_var("title", departmental_positions, limit_to_occupied_positions, 10))
 ```
 
 
@@ -53,54 +46,21 @@ view(top_n_for_grouping_var("title", 10))
 
 
 ```js
-function top_n_for_grouping_var(grouping_var, n = 10, positions_to_analyze = departmental_positions,  apply_limit_to_occupied_filter = true, return_view = true) {
-  const top_n = aq.from(positions_to_analyze)
-    .params({ apply_limit_to_occupied_filter, limit_to_occupied_positions })
-    .filter(d => apply_limit_to_occupied_filter ? (limit_to_occupied_positions ? d.position_status == "Occupied" : true) : true)
-    .groupby(grouping_var)
-    .count()
-    .derive({ percent: d => Math.round(d.count / aq.op.sum(d.count) * 1000) / 10 })
-    .orderby(aq.desc("count"))
-    .slice(0, n)
-
-  if (return_view) {
-    return Inputs.table(top_n)
-  }
-  
-  return top_n
-}
+import * as PCIS from "./components/load-core-data.js"
 ```
 
 ```js
-const org_to_analyze_label = org_codes.filter((org) => org.organization_code == org_to_analyze)[0]['organization']
+const org_to_analyze_label = PCIS.org_to_analyze_label(org_codes, org_to_analyze)
 ```
 
 ```js
-const departmental_positions = positions_graph_db.query(
-  `SELECT * FROM nodes WHERE organization_code = '${org_to_analyze}'`
-)
+const departmental_positions = PCIS.departmental_positions(org_to_analyze)
 ```
 
 ```js
-let org_codes_qry = async () => {
-  const qry = await positions_graph_db.query(`SELECT "organization_code", "organization", COUNT("organization_code") as n_positions FROM nodes GROUP BY "organization", "organization_code" ORDER BY "organization"`)
-
-  return qry
-    .filter((d) => d.organization_code != null);
-}
-
-const org_codes = await org_codes_qry()
+const org_codes = PCIS.org_codes()
 ```
 
 ```js
-const positions_graph_db = DuckDBClient.of({
-  nodes: FileAttachment("data/positions-graph-nodes.parquet"),
-  edges: FileAttachment("data/positions-graph-edges.parquet"),
-})
-```
-
-```js
-const gc_positions = positions_graph_db.query(
-  `SELECT work_location, position_status FROM nodes`
-)
+const gc_positions = PCIS.gc_positions()
 ```
