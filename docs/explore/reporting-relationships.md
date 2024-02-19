@@ -187,7 +187,7 @@ _(The above is more or less complete, while the remaining portions are a work in
 </div>
 
 <div class="caution">
-	<p>An important caveat for this section: The data in PCIS+ isn’t always complete—for some departments, supervisor positions are referenced that don’t appear anywhere else in the dataset. We’ve created <a href="/about/inferred-positions">“inferred positions”</a> for any supervisor positions that are referenced (since the dataset includes supervisor group and level), but this can cause various “orphan” reporting trees, because we don’t know much about the “inferred supervisors”—these inconsistencies affect the calculations below.</p>
+	<p>The data in PCIS+ isn’t always complete—for some departments, supervisor positions are referenced that don’t appear anywhere else in the dataset. We’ve created <a href="/about/inferred-positions">“inferred positions”</a> for any supervisor positions that are referenced (since the dataset includes supervisor group and level), but this can cause various “orphan” reporting trees, because we don’t know much about the “inferred supervisors”—these inconsistencies affect the calculations below.</p>
 	<p>So, while they’re likely of decent accuracy (and certainly are reasonable for indicating trends, if anything), as ever, please take them with a critical eye!</p>
 </div>
 
@@ -297,6 +297,14 @@ view(Inputs.table(
 view(Inputs.table(departmental_supervisors))
 ```
 
+
+
+## TODO: More about (chosen group) to (chosen supervisor group) in the GC
+
+e.g., this stat, but in the GC: Of the PM-supervised positions at Infrastructure Canada, 5 are EC positions. The EC group makes up 3.9% of positions supervised by PM-classified supervisors at Infrastructure Canada.
+
+
+
 <!-- # Loading code -->
 
 <!-- ## Specific -->
@@ -366,10 +374,6 @@ const groups = groups_qry
 	.filter(d => d.group !== null)
 ```
 
-
-## TODO: More about (chosen group) to (chosen supervisor group) in the GC
-
-e.g., this stat, but in the GC: Of the PM-supervised positions at Infrastructure Canada, 5 are EC positions. The EC group makes up 3.9% of positions supervised by PM-classified supervisors at Infrastructure Canada.
 
 <!-- ## Generic -->
 
