@@ -11,6 +11,7 @@ title: Explore by classification
 - occupied vs not
 - supervisor vs not
 - \# reports?
+- homogeneity (maybe better in `reporting-relationships`), basically, how common %-wise is it for this classification to report to its own (and, in comparison to others)
 
 [career opportunities!?]
 - “depth from top” calculation: how easily can someone access EX-1, -3, -5, DM (etc) to provide them the “experience briefing” etc type requirements for job postings—e.g., that’s easier at central agencies than at departments, presumably (“distance to EX” as metric)

@@ -122,9 +122,14 @@ const supervised_group_of_interest = view(Inputs.select(groups_reporting_to_supe
     // They are rank ${n_departmental_positions_supervisor_oi_by_group.objects().filter(group => group.group == supervised_group_of_interest)[0]['rank']} out of ${n_departmental_positions_supervisor_oi_by_group.rollup({rank_max: d => op.max(d.rank)}).get('rank_max')}.
   }
 
-  view(html`Of the ${supervisor_group_of_interest}-supervised positions at ${org_to_analyze_label}, ${departmental_positions_with_supervisor_and_group_of_interest.length.toLocaleString()} are ${supervised_group_of_interest} positions. ${potential_extra_detail_re_percentages}`)
+  let comparison_to_core = `By comparison, the ${supervised_group_of_interest} group makes up ${Math.round(positions_with_supervisor_of_interest.filter(d => d.group == supervised_group_of_interest).length / positions_with_supervisor_of_interest.length * 1000) / 10}% of positions supervised by ${supervisor_group_of_interest}-classified supervisors in the core as a whole.`
+
+  // TODO: add homogeneity comparison / discussion: is the % of that supervisor-supervised relationship more, the same, or less between the org and the core?
+
+  view(html`Of the ${supervisor_group_of_interest}-supervised positions at ${org_to_analyze_label}, ${departmental_positions_with_supervisor_and_group_of_interest.length.toLocaleString()} are ${supervised_group_of_interest} positions. ${potential_extra_detail_re_percentages} ${comparison_to_core}`)
 }
 ```
+
 
 **To put things in perspective, here’s how often ${supervised_group_of_interest} positions report to ${supervisor_group_of_interest}-classified positions in the core GC, in a slightly confusing table.** Every organization is in here twice, in order of how common this arrangement is:
 
@@ -296,12 +301,6 @@ view(Inputs.table(
 ```js
 view(Inputs.table(departmental_supervisors))
 ```
-
-
-
-## TODO: More about (chosen group) to (chosen supervisor group) in the GC
-
-e.g., this stat, but in the GC: Of the PM-supervised positions at Infrastructure Canada, 5 are EC positions. The EC group makes up 3.9% of positions supervised by PM-classified supervisors at Infrastructure Canada.
 
 
 
