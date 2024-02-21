@@ -5,13 +5,17 @@ Work locations
 # Work locations
 ## Or: “No, the federal government isn’t _just_ in Ottawa / Gatineau”
 
-```js
-const org_to_analyze = view(PCIS.org_to_analyze_input(org_codes))
-```
 
 [TODO]
 - orgs where their primary location isn't Ottawa / Gatineau
 - orgs with lower-than-normal Ottawa / Gatineau % (i.e., even if they're first, they're not the only)
+- "Ontario" / "QC" vs "NCR" (can we split those out, when doing the map?)
+- smaller geometries (e.g., FSA, specific cities, etc...)
+- load all the data, facet by org
+
+```js
+const org_to_analyze = view(PCIS.org_to_analyze_input(org_codes))
+```
 
 ```js
 const pt_names = provincesAndTerritories.map((pt) => ({pt: pt.name}))
@@ -28,7 +32,8 @@ const employees_by_pt = aq.from(pt_names)
 	.derive({pct: d => Math.round(d.count / aq.op.sum(d.count) *1000) / 10})
 	.objects()
 
-const employees_by_pt_map = new Map(employees_by_pt.map(d => [d.pt, d.pct]))
+const employees_by_pt_counts = new Map(employees_by_pt.map(d => [d.pt, d.count]))
+const employees_by_pt_pcts = new Map(employees_by_pt.map(d => [d.pt, d.pct]))
 ```
 
 ```js
@@ -39,25 +44,30 @@ Plot.plot({
     domain: canada_pts_geojson
   },
   color: {
-	n: 10,
 	scheme: "bupu",
-	range: [0.2, 0.8],
-    label: "Positions (%)",
-	domain: [0, 100],
+	scale: "quantize",
+	range: [0.2, 0.8], // subsetting the colour range: https://observablehq.com/plot/features/scales#color-scale-options
+    label: "Positions",
     legend: true
   },
 	marks: [
 		Plot.geo(
-			canada_pts_geojson, {
-				fill: (d) => employees_by_pt_map.get(d.properties.prov.name),
-				title: (d) => `${employees_by_pt_map.get(d.properties.prov.name)}%`
-			}
+			canada_pts_geojson, Plot.centroid({
+				fill: (d) => employees_by_pt_counts.get(d.properties.prov.name),
+				title: (d) => `${d.properties.prov.full.en}: ${employees_by_pt_counts.get(d.properties.prov.name).toLocaleString()} (${employees_by_pt_pcts.get(d.properties.prov.name)}%)`
+			})
 		),
-		// Plot.dot(canada_pts_geojson, Plot.centroid({fill: "red", stroke: "black"})),
-		// Plot.tip(canada_pts_geojson, Plot.pointer(Plot.centroid({title: (d) => d.properties.prov.name})))
+		Plot.text(canada_pts_geojson.features, Plot.centroid({ // NB! we have to surface the `.features` property for this to work
+			fill: "currentColor",
+			text: (d) => `${d.properties.prov.name}: ${employees_by_pt_counts.get(d.properties.prov.name).toLocaleString()} (${employees_by_pt_pcts.get(d.properties.prov.name)}%)`
+		})),
 	]
 })
 ```
+
+TODO:
+- handle null locations
+- handle non-Canada locations (GAC, IRCC, ...)
 
 ```js
 display(canada_pts_geojson)
