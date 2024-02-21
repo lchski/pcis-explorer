@@ -54,13 +54,55 @@ Plot.plot({
 		Plot.geo(
 			canada_pts_geojson, Plot.centroid({
 				fill: (d) => employees_by_pt_counts.get(d.properties.prov.name),
-				title: (d) => `${d.properties.prov.full.en}: ${employees_by_pt_counts.get(d.properties.prov.name).toLocaleString()} (${employees_by_pt_pcts.get(d.properties.prov.name)}%)`
+				// title: (d) => `${d.properties.prov.full.en}: ${employees_by_pt_counts.get(d.properties.prov.name).toLocaleString()} (${employees_by_pt_pcts.get(d.properties.prov.name)}%)`,
+				tip: true,
+				channels: {
+					"%": d => employees_by_pt_pcts.get(d.properties.prov.name),
+					"P/T": d => d.properties.prov.full.en
+				}
 			})
 		),
-		Plot.text(canada_pts_geojson.features, Plot.centroid({ // NB! we have to surface the `.features` property for this to work
-			fill: "currentColor",
-			text: (d) => `${d.properties.prov.name}: ${employees_by_pt_counts.get(d.properties.prov.name).toLocaleString()} (${employees_by_pt_pcts.get(d.properties.prov.name)}%)`
-		})),
+		// Plot.text(canada_pts_geojson.features, Plot.centroid({ // NB! we have to surface the `.features` property for this to work
+		// 	fill: "currentColor",
+		// 	text: (d) => `${d.properties.prov.name}: ${employees_by_pt_counts.get(d.properties.prov.name).toLocaleString()} (${employees_by_pt_pcts.get(d.properties.prov.name)}%)`
+		// })),
+	]
+})
+```
+
+```js
+Plot.plot({
+  projection: {
+    type: "conic-conformal",
+    rotate: [100, -60],
+    domain: canada_pts_geojson,
+	inset: 10
+  },
+  color: {
+	scheme: "bupu",
+	scale: "quantize",
+	range: [0.2, 0.8], // subsetting the colour range: https://observablehq.com/plot/features/scales#color-scale-options
+    label: "Positions",
+    legend: true
+  },
+	marks: [
+		Plot.geo(
+			canada_pts_geojson,
+			{
+				stroke: "red"
+			}
+		),
+		Plot.geo(
+			canada_cds_geojson,
+			Plot.centroid({
+				// fill: (d) => gc_positions_org_geo.filter(p => p.org_code == org_to_analyze && p.census_division == d.properties.CDUID).length,
+				tip: true,
+				channels: {
+					"Census Division": d => d.properties.CDNAME
+				},
+				strokeOpacity: 0.1
+			})
+		),
 	]
 })
 ```
@@ -69,9 +111,6 @@ TODO:
 - handle null locations
 - handle non-Canada locations (GAC, IRCC, ...)
 
-```js
-display(canada_pts_geojson)
-```
 
 ```js
 // Source: https://observablehq.com/@nshiab/provinces-and-territories-labels
@@ -102,6 +141,33 @@ function get_canada_pts_geojson() {
 }
 
 const canada_pts_geojson = get_canada_pts_geojson()
+```
+
+```js
+/**
+ * - mapshaper, load the .zip from StatsCan in "Quick Import"
+ * - simplify to `0.1%` [leave the the "prevent shape removal" option unchecked]
+ * - console, `-proj wgs84` to get to latlng [leac?]
+ * - export, `precision=0.001`
+ */
+
+const canada_cds_geojson_raw = FileAttachment("../data/canada-census-divisions.json").json()
+// const canada_cds_geojson_raw = FileAttachment("../data/lcd_000b21a_e(3).json").json() //leac
+```
+
+```js
+function get_canada_cds_geojson() {
+	const geo = structuredClone(canada_cds_geojson_raw);
+	
+	return rewind(geo);
+}
+
+const canada_cds_geojson = get_canada_cds_geojson()
+```
+
+```js
+display(canada_cds_geojson)
+display(canada_pts_geojson)
 ```
 
 ```js
@@ -212,6 +278,26 @@ const org_codes = PCIS.org_codes()
 ```
 
 ```js
-const gc_positions = PCIS.gc_positions()
-```
+const gc_positions_org_geo_qry = await PCIS.query_positions_graph_db(`
+	SELECT
+		position_gid,
+		organization_code,
+		organization,
+		position_status,
+		"group",
+		level,
+		is_supervisor,
+		inferred_position,
+		ranks_from_top,
+		reports_total,
+		geographic_location_code,
+		province_territory
+	FROM nodes
+`)
 
+const gc_positions_org_geo = aq.from(gc_positions_org_geo_qry)
+	.derive({
+		census_division: d => aq.op.substring(d.geographic_location_code, 0, 4)
+	})
+	.objects()
+```
