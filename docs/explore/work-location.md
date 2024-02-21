@@ -25,35 +25,42 @@ const employees_by_pt = aq.from(pt_names)
 	)
 	.select(aq.not('province_territory'))
 	.derive({count: d => (d.count != null) ? d.count : 0})
+	.derive({pct: d => Math.round(d.count / aq.op.sum(d.count) *1000) / 10})
 	.objects()
 
-const employees_by_pt_map = new Map(employees_by_pt.map(d => [d.pt, d.count]))
+const employees_by_pt_map = new Map(employees_by_pt.map(d => [d.pt, d.pct]))
 ```
 
 ```js
 Plot.plot({
-color: {
-    type: "quantize",
-    n: 9,
-    domain: [1, 10],
-    scheme: "blues",
-    label: "Unemployment rate (%)",
-    legend: true
-  },
   projection: {
     type: "conic-conformal",
     rotate: [100, -60],
     domain: canada_pts_geojson
   },
+  color: {
+	n: 10,
+	scheme: "bupu",
+	range: [0.2, 0.8],
+    label: "Positions (%)",
+	domain: [0, 100],
+    legend: true
+  },
 	marks: [
 		Plot.geo(
-			canada_pts_geojson,
-			Plot.centroid({
-				fill: (d) => employees_by_pt_map.get(d.properties.name)
-			})
-		)
+			canada_pts_geojson, {
+				fill: (d) => employees_by_pt_map.get(d.properties.prov.name),
+				title: (d) => `${employees_by_pt_map.get(d.properties.prov.name)}%`
+			}
+		),
+		// Plot.dot(canada_pts_geojson, Plot.centroid({fill: "red", stroke: "black"})),
+		// Plot.tip(canada_pts_geojson, Plot.pointer(Plot.centroid({title: (d) => d.properties.prov.name})))
 	]
 })
+```
+
+```js
+display(canada_pts_geojson)
 ```
 
 ```js
@@ -72,7 +79,9 @@ function get_canada_pts_geojson() {
 	const geo = structuredClone(canada_pts_geojson_raw);
 	
 	for (const feature of geo.features) {
+		feature.id = feature.properties.PRUID;
 		feature.properties = {
+			...feature.properties,
 			prov: provincesAndTerritories.find(
 				(d) => d.code === feature.properties.PRUID
 			)
