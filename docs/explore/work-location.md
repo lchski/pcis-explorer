@@ -18,6 +18,10 @@ const org_to_analyze = view(PCIS.org_to_analyze_input(org_codes))
 ```
 
 ```js
+const limit_to_occupied_positions = view(Inputs.toggle({label: "Limit visualizations and statistics to occupied positions", value: false}))
+```
+
+```js
 const pt_names = [{"PRUID":"48","pt":"AB"},{"PRUID":"59","pt":"BC"},{"PRUID":"47","pt":"SK"},{"PRUID":"46","pt":"MB"},{"PRUID":"35","pt":"ON"},{"PRUID":"24","pt":"QC"},{"PRUID":"13","pt":"NB"},{"PRUID":"12","pt":"NS"},{"PRUID":"11","pt":"PE"},{"PRUID":"10","pt":"NL"},{"PRUID":"60","pt":"YT"},{"PRUID":"61","pt":"NT"},{"PRUID":"62","pt":"NU"},{"PRUID":"NCR","pt":"NCR"}]
 
 const employees_by_pt = aq.from(pt_names)
@@ -176,6 +180,7 @@ const org_to_analyze_label = PCIS.org_to_analyze_label(org_codes, org_to_analyze
 
 ```js
 const departmental_positions = gc_positions_org_geo
+	.filter(d => limit_to_occupied_positions ? d.position_status == "Occupied" : true)
 	.filter(d => d.organization_code == org_to_analyze)
 ```
 
