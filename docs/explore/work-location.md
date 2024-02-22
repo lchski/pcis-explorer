@@ -18,7 +18,7 @@ const org_to_analyze = view(PCIS.org_to_analyze_input(org_codes))
 ```
 
 ```js
-const pt_names = [{"PRUID":"48","pt":"AB"},{"PRUID":"59","pt":"BC"},{"PRUID":"47","pt":"SK"},{"PRUID":"46","pt":"MB"},{"PRUID":"35","pt":"ON"},{"PRUID":"24","pt":"QC"},{"PRUID":"13","pt":"NB"},{"PRUID":"12","pt":"NS"},{"PRUID":"11","pt":"PE"},{"PRUID":"10","pt":"NL"},{"PRUID":"60","pt":"YT"},{"PRUID":"61","pt":"NT"},{"PRUID":"62","pt":"NU"}]
+const pt_names = [{"PRUID":"48","pt":"AB"},{"PRUID":"59","pt":"BC"},{"PRUID":"47","pt":"SK"},{"PRUID":"46","pt":"MB"},{"PRUID":"35","pt":"ON"},{"PRUID":"24","pt":"QC"},{"PRUID":"13","pt":"NB"},{"PRUID":"12","pt":"NS"},{"PRUID":"11","pt":"PE"},{"PRUID":"10","pt":"NL"},{"PRUID":"60","pt":"YT"},{"PRUID":"61","pt":"NT"},{"PRUID":"62","pt":"NU"},{"PRUID":"NCR","pt":"NCR"}]
 
 const employees_by_pt = aq.from(pt_names)
 	.join_left( // NB! this removes inferred positions, which don't have a work location
@@ -160,6 +160,9 @@ Data sources:
 - https://www12.statcan.gc.ca/census-recensement/2021/geo/sip-pis/boundary-limites/index2021-eng.cfm?year=21
 - mapshaper (TODO explain methodology)
 
+NB!
+- rounding "up" from csd (`geographic_location_code`) to cd (first four digits thereof) means that we may oeprate at a slightly lower level of detail, but hopefully with more accuracy: some positions seem to have old csd numbers (see `work_location` of Gatineau, Val-d'Or, etc), by simplifying to cd we hopefully capture them all
+- non-Canada locations, inferred positions don't get counted
 
 <!-- ## Generic -->
 
@@ -172,7 +175,8 @@ const org_to_analyze_label = PCIS.org_to_analyze_label(org_codes, org_to_analyze
 ```
 
 ```js
-const departmental_positions = PCIS.departmental_positions(org_to_analyze)
+const departmental_positions = gc_positions_org_geo
+	.filter(d => d.organization_code == org_to_analyze)
 ```
 
 ```js
@@ -192,6 +196,7 @@ const gc_positions_org_geo_qry = await PCIS.query_positions_graph_db(`
 		inferred_position,
 		ranks_from_top,
 		reports_total,
+		work_location,
 		geographic_location_code,
 		province_territory
 	FROM nodes
@@ -200,6 +205,9 @@ const gc_positions_org_geo_qry = await PCIS.query_positions_graph_db(`
 const gc_positions_org_geo = aq.from(gc_positions_org_geo_qry)
 	.derive({
 		census_division: d => aq.op.substring(d.geographic_location_code, 0, 4)
+	})
+	.derive({
+		province_territory: d => (aq.op.includes(["3506", "2481"], d.census_division)) ? "NCR" : d.province_territory
 	})
 	.objects()
 ```
