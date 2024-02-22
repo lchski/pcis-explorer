@@ -71,45 +71,6 @@ Plot.plot({
 ```
 
 ```js
-// Plot.plot({
-//   projection: {
-//     type: "conic-conformal",
-//     rotate: [100, -60],
-//     domain: canada_pts_geojson,
-// 	inset: 10
-//   },
-//   color: {
-// 	scheme: "bupu",
-// 	scale: "quantize",
-// 	range: [0.2, 0.8], // subsetting the colour range: https://observablehq.com/plot/features/scales#color-scale-options
-//     label: "Positions",
-//     legend: true
-//   },
-// 	marks: [
-// 		Plot.geo(
-// 			canada_pts_geojson,
-// 			{
-// 				stroke: "red"
-// 			}
-// 		),
-// 		Plot.geo(
-// 			canada_cds_geojson,
-// 			Plot.centroid({
-// 				// fill: (d) => gc_positions_org_geo.filter(p => p.org_code == org_to_analyze && p.census_division == d.properties.CDUID).length,
-// 				tip: true,
-// 				title: d => d.properties.CDNAME,
-// 				text: d => d.properties.CDNAME,
-// 				channels: {
-// 					"Census Division": d => d.properties.CDNAME
-// 				},
-// 				strokeOpacity: 0.1
-// 			})
-// 		),
-// 	]
-// })
-```
-
-```js
 Plot.plot({
   projection: {
     type: "conic-conformal",
@@ -117,13 +78,30 @@ Plot.plot({
     domain: canada_pts_geojson,
 	inset: 10
   },
+  color: {
+	scheme: "bupu",
+	scale: "quantize",
+	// range: [0.2, 0.8], // subsetting the colour range: https://observablehq.com/plot/features/scales#color-scale-options
+    label: "Positions",
+    legend: true
+  },
 	marks: [
 		Plot.geo(
-			canada_cds_geojson,
+			canada_pts_geojson,
 			{
-				title: d => `${d.properties.CDUID}: ${d.properties.CDNAME}`,
-				text: d => `${d.properties.CDUID}: ${d.properties.CDNAME}`,
+				strokeOpacity: 0.5
 			}
+		),
+		Plot.geo(
+			canada_cds_geojson,
+			Plot.centroid({
+				fill: (d) => gc_positions_org_geo.filter(p => p.census_division == d.properties.CDUID).length,
+				tip: true,
+				channels: {
+					"Census Division": d => `${d.properties.CDNAME} (#${d.properties.CDUID})`
+				},
+				strokeOpacity: 0.1
+			})
 		),
 	]
 })
@@ -132,6 +110,7 @@ Plot.plot({
 TODO:
 - handle null locations
 - handle non-Canada locations (GAC, IRCC, ...)
+- add filtering for locations
 
 
 ```js
@@ -184,12 +163,6 @@ function get_canada_cds_geojson() {
 }
 
 const canada_cds_geojson = get_canada_cds_geojson()
-```
-
-```js
-display(canada_cds_geojson_raw)
-display(canada_cds_geojson)
-display(canada_pts_geojson)
 ```
 
 ```js
@@ -279,6 +252,7 @@ const provincesAndTerritories = [
 Data sources:
 - https://observablehq.com/@nshiab/canada-provinces-and-territories-polygons
 - https://www12.statcan.gc.ca/census-recensement/2021/geo/sip-pis/boundary-limites/index2021-eng.cfm?year=21
+- mapshaper (TODO explain methodology)
 
 
 <!-- ## Generic -->
