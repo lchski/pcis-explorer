@@ -71,42 +71,42 @@ Plot.plot({
 ```
 
 ```js
-Plot.plot({
-  projection: {
-    type: "conic-conformal",
-    rotate: [100, -60],
-    domain: canada_pts_geojson,
-	inset: 10
-  },
-  color: {
-	scheme: "bupu",
-	scale: "quantize",
-	range: [0.2, 0.8], // subsetting the colour range: https://observablehq.com/plot/features/scales#color-scale-options
-    label: "Positions",
-    legend: true
-  },
-	marks: [
-		Plot.geo(
-			canada_pts_geojson,
-			{
-				stroke: "red"
-			}
-		),
-		Plot.geo(
-			canada_cds_geojson,
-			Plot.centroid({
-				// fill: (d) => gc_positions_org_geo.filter(p => p.org_code == org_to_analyze && p.census_division == d.properties.CDUID).length,
-				tip: true,
-				title: d => d.properties.CDNAME,
-				text: d => d.properties.CDNAME,
-				channels: {
-					"Census Division": d => d.properties.CDNAME
-				},
-				strokeOpacity: 0.1
-			})
-		),
-	]
-})
+// Plot.plot({
+//   projection: {
+//     type: "conic-conformal",
+//     rotate: [100, -60],
+//     domain: canada_pts_geojson,
+// 	inset: 10
+//   },
+//   color: {
+// 	scheme: "bupu",
+// 	scale: "quantize",
+// 	range: [0.2, 0.8], // subsetting the colour range: https://observablehq.com/plot/features/scales#color-scale-options
+//     label: "Positions",
+//     legend: true
+//   },
+// 	marks: [
+// 		Plot.geo(
+// 			canada_pts_geojson,
+// 			{
+// 				stroke: "red"
+// 			}
+// 		),
+// 		Plot.geo(
+// 			canada_cds_geojson,
+// 			Plot.centroid({
+// 				// fill: (d) => gc_positions_org_geo.filter(p => p.org_code == org_to_analyze && p.census_division == d.properties.CDUID).length,
+// 				tip: true,
+// 				title: d => d.properties.CDNAME,
+// 				text: d => d.properties.CDNAME,
+// 				channels: {
+// 					"Census Division": d => d.properties.CDNAME
+// 				},
+// 				strokeOpacity: 0.1
+// 			})
+// 		),
+// 	]
+// })
 ```
 
 ```js
@@ -132,35 +132,6 @@ Plot.plot({
 TODO:
 - handle null locations
 - handle non-Canada locations (GAC, IRCC, ...)
-- fix the census division that causes a bounding box?? `"CDUID":"1010","DGUID":"2021A00031010","CDNAME":"Division No. 10"` (FIXED!)
-- fix the census subdivisions with the same (manually add `id="path1"` to the map path):
-
-```
-[...document.querySelector("#path1").children].map((path, i) => ({index: i, csd: path.lastChild.innerHTML, width: path.getBoundingClientRect().width, height: path.getBoundingClientRect().height})).sort((a, b) => a.width < b.width)
-Array(5161) [ {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, … ]
-​
-[0…99]
-​​
-0: Object { index: 130, csd: "1003001: Division No.  3, Subd. A", width: 640.4666748046875, … }
-​​
-1: Object { index: 362, csd: "1010042: Division No. 10, Subd. E", width: 640.4666748046875, … }
-​​
-2: Object { index: 423, csd: "1102068: West River", width: 640.4666748046875, … }
-​​
-3: Object { index: 728, csd: "1310024: Southampton", width: 640.4666748046875, … }
-​​
-4: Object { index: 1472, csd: "2452040: Sainte-Geneviève-de-Berthier", width: 640.4666748046875, … }
-​​
-5: Object { index: 2576, csd: "3558004: Thunder Bay", width: 640.4666748046875, … }
-​​
-6: Object { index: 4209, csd: "4815802: Stoney 142, 143, 144", width: 640.4666748046875, … }
-​​
-7: Object { index: 4451, csd: "5915011: Delta", width: 640.4666748046875, … }
-​​
-8: Object { index: 4885, csd: "5943037: Mount Waddington A", width: 640.4666748046875, … }
-​​
-9: Object { index: 5144, csd: "6204030: Qikiqtaaluk, Unorganized", width: 230.26666259765625, … }
-```
 
 
 ```js
@@ -197,12 +168,12 @@ const canada_pts_geojson = get_canada_pts_geojson()
 ```js
 /**
  * - mapshaper, load the .zip from StatsCan in "Quick Import"
- * - simplify to `0.1%` (leave the the "prevent shape removal" option unchecked)
+ * - simplify to `0.1%` (leave the "prevent shape removal" option unchecked)
  * - console, `-proj wgs84` to get to latlng
- * - export, `precision=0.001` [0.01]
+ * - export, `precision=0.01` [0.01]
  */
 
-const canada_cds_geojson_raw = FileAttachment("../data/lcd_000b21a_e.json").json()
+const canada_cds_geojson_raw = FileAttachment("../data/canada-census-divisions.json").json()
 ```
 
 ```js
@@ -216,6 +187,7 @@ const canada_cds_geojson = get_canada_cds_geojson()
 ```
 
 ```js
+display(canada_cds_geojson_raw)
 display(canada_cds_geojson)
 display(canada_pts_geojson)
 ```
