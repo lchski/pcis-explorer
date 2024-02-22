@@ -22,9 +22,13 @@ const limit_to_occupied_positions = view(Inputs.toggle({label: "Limit visualizat
 ```
 
 ```js
+const remove_top_location = view(Inputs.toggle({label: "Remove the location with the highest # of positions (to make the rest more visible)", value: false}))
+```
+
+```js
 const pt_names = [{"PRUID":"48","pt":"AB"},{"PRUID":"59","pt":"BC"},{"PRUID":"47","pt":"SK"},{"PRUID":"46","pt":"MB"},{"PRUID":"35","pt":"ON"},{"PRUID":"24","pt":"QC"},{"PRUID":"13","pt":"NB"},{"PRUID":"12","pt":"NS"},{"PRUID":"11","pt":"PE"},{"PRUID":"10","pt":"NL"},{"PRUID":"60","pt":"YT"},{"PRUID":"61","pt":"NT"},{"PRUID":"62","pt":"NU"},{"PRUID":"NCR","pt":"NCR"}]
 
-const employees_by_pt = aq.from(pt_names)
+const employees_by_pt_raw = aq.from(pt_names)
 	.join_left( // NB! this removes inferred positions, which don't have a work location
 		aq.from(departmental_positions)
 			.groupby("province_territory")
@@ -34,7 +38,15 @@ const employees_by_pt = aq.from(pt_names)
 	.select(aq.not('pt'))
 	.derive({count: d => (d.count != null) ? d.count : 0})
 	.derive({pct: d => Math.round(d.count / aq.op.sum(d.count) *1000) / 10})
+	.orderby(aq.desc('count'))
+	.derive({rank: d => aq.op.rank()})
 	.objects()
+
+const employees_by_pt = employees_by_pt_raw
+	.filter(d => remove_top_location ? d.rank > 1 : true )
+
+const removed_top_pt = employees_by_pt_raw
+	.filter(d => d.rank == 1)[0]
 
 const employees_by_pt_counts = new Map(employees_by_pt.map(d => [d.PRUID, d.count]))
 const employees_by_pt_pcts = new Map(employees_by_pt.map(d => [d.PRUID, d.pct]))
@@ -42,6 +54,8 @@ const employees_by_pt_pcts = new Map(employees_by_pt.map(d => [d.PRUID, d.pct]))
 
 ```js
 Plot.plot({
+	title: `Positions at ${org_to_analyze_label} by province / territory / region`,
+	caption: remove_top_location ? html`The top province / territory / region, ${removed_top_pt.province_territory}, is not shown in this map due to the “Remove top location” toggle at the start of the report. It has ${removed_top_pt.count.toLocaleString()} (${removed_top_pt.pct}%) of the positions at ${org_to_analyze_label}. Percentages in the map reflect the percentage of <em>total</em> positions at the department.` : '',
   projection: {
     type: "conic-conformal",
     rotate: [100, -60],
@@ -76,6 +90,7 @@ Plot.plot({
 
 ```js
 Plot.plot({
+	title: `Positions at ${org_to_analyze_label} by census division`,
   projection: {
     type: "conic-conformal",
     rotate: [100, -60],
@@ -99,7 +114,7 @@ Plot.plot({
 		Plot.geo(
 			canada_cds_geojson,
 			Plot.centroid({
-				fill: (d) => gc_positions_org_geo.filter(p => p.census_division == d.properties.CDUID).length,
+				fill: (d) => departmental_positions.filter(p => p.census_division == d.properties.CDUID).length,
 				tip: true,
 				channels: {
 					"Census Division": d => `${d.properties.CDNAME} (#${d.properties.CDUID})`
