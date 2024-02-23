@@ -212,6 +212,44 @@ TODO:
 - handle non-Canada locations (GAC, IRCC, CBSA, ...)—they seem to have two-digit geographic_location_codes, 91 to 99, and have all been assigned the QC PT lol?
 - add filtering for locations
 
+## Orgs outside the NCR
+
+```js
+const positions_by_org_pt = aq.from(gc_positions_org_geo)
+	.filter(d => d.organization != null)
+	.groupby("organization", "province_territory")
+	.count()
+	.orderby("organization", aq.desc("count"))
+	.groupby("organization")
+	.derive({
+		pct: d => Math.round(d.count / aq.op.sum(d.count) *1000) / 10,
+		rank: d => aq.op.rank(),
+	})
+	.objects()
+
+const orgs_majority_in_ncr = aq.from(positions_by_org_pt)
+	.filter(d => d.province_territory == "NCR")
+	.filter(d => d.pct >= 50)
+	.array("organization")
+```
+
+Of the ${org_codes.length} organizations in PCIS+, ${org_codes.length - orgs_majority_in_ncr.length} have more than 50% of their positions outside of the National Capital Region:
+
+```js
+display(Inputs.table(aq.from(positions_by_org_pt)
+	.params({ orgs_majority_in_ncr })
+	.filter(d => ! aq.op.includes(orgs_majority_in_ncr, d.organization ))
+	.objects()
+))
+```
+
+Of these organizations, ${[...new Set(aq.from(positions_by_org_pt).params({ orgs_majority_in_ncr }).filter(d => ! aq.op.includes(orgs_majority_in_ncr, d.organization )).filter(d => d.rank == 1 && d.province_territory != "NCR").array("organization"))].length} have the highest number of positions in a province / territory / region in somewhere other than the NCR (there are some departments that have fewer than 50% of their positions in the NCR, but it’s still the place with _most_ of their positions—these departments are excluded from this stat).
+
+[TODO: how many have no positions in NCR?]
+
+[TODO: add and flag "limit to occupied", or note that it's not applied, for this section?]
+
+
 
 ```js
 const international_geographic_location_codes = [
