@@ -26,7 +26,7 @@ const remove_top_location = view(Inputs.toggle({label: "Remove the location with
 ```
 
 ```js
-const pt_names = [{"PRUID":"48","pt":"AB"},{"PRUID":"59","pt":"BC"},{"PRUID":"47","pt":"SK"},{"PRUID":"46","pt":"MB"},{"PRUID":"35","pt":"ON"},{"PRUID":"24","pt":"QC"},{"PRUID":"13","pt":"NB"},{"PRUID":"12","pt":"NS"},{"PRUID":"11","pt":"PE"},{"PRUID":"10","pt":"NL"},{"PRUID":"60","pt":"YT"},{"PRUID":"61","pt":"NT"},{"PRUID":"62","pt":"NU"},{"PRUID":"NCR","pt":"NCR"}]
+const pt_names = [{"PRUID":"48","pt":"AB"},{"PRUID":"59","pt":"BC"},{"PRUID":"47","pt":"SK"},{"PRUID":"46","pt":"MB"},{"PRUID":"35","pt":"ON"},{"PRUID":"24","pt":"QC"},{"PRUID":"13","pt":"NB"},{"PRUID":"12","pt":"NS"},{"PRUID":"11","pt":"PE"},{"PRUID":"10","pt":"NL"},{"PRUID":"60","pt":"YT"},{"PRUID":"61","pt":"NT"},{"PRUID":"62","pt":"NU"},{"PRUID":"NCR","pt":"NCR"},{"PRUID":"INTL","pt":"INTL"}]
 
 const employees_by_pt_raw = aq.from(pt_names)
 	.join_left( // NB! this removes inferred positions, which don't have a work location
@@ -89,6 +89,14 @@ Plot.plot({
 ```
 
 ```js
+if (employees_by_pt_counts.get("INTL") > 0) {
+	view(html`<div class="note">
+		<p>${org_to_analyze_label} includes ${employees_by_pt_counts.get("INTL").toLocaleString()} positions (${employees_by_pt_pcts.get("INTL")}% of its total positions) with international locations, not mapped here. See tables below for more.</p>
+	</div>`)
+}
+```
+
+```js
 const org_positions_by_cd_raw = aq.from(departmental_positions)
 	.groupby("census_division")
 	.count()
@@ -147,11 +155,76 @@ Plot.plot({
 })
 ```
 
+```js
+{
+	let concentration = "not"
+
+	if (org_positions_by_cd_detailed[0].pct >= 50) {
+		concentration = "somewhat"
+	}
+
+	if (org_positions_by_cd_detailed[0].pct >= 80) {
+		concentration = "very"
+	}
+
+	if (org_positions_by_cd_detailed[0].pct >= 95) {
+		concentration = "extremely"
+	}
+
+	let positions_with_unknown_cd = org_positions_by_cd_detailed.find(d => d.census_division == null)
+	
+	view(html`<p>${org_to_analyze_label} is ${concentration} geographically concentrated, with ${org_positions_by_cd_detailed[0].pct}% of its positions in the ${org_positions_by_cd_detailed[0].census_division} census division, and its remaining positions in ${(org_positions_by_cd_detailed.length - 1).toLocaleString()} other census division(s) (including ${positions_with_unknown_cd.count.toLocaleString()} position(s), likely inferred, with an unknown work location).</p><p>Here’s the distribution of positions by census division:</p>`)
+}
+```
+
+```js
+const org_positions_by_cd_detailed = aq.from(org_positions_by_cd_raw)
+	.objects()
+	.map(cd => ({
+		id: cd.census_division,
+		census_division: canada_cds_names.get(cd.census_division),
+		count: cd.count,
+		pct: cd.pct
+	}))
+
+view(Inputs.table(
+	org_positions_by_cd_detailed
+))
+```
+
+
+
 TODO:
-- handle null locations
-- handle non-Canada locations (GAC, IRCC, ...)
+- handle null locations (add them to the captions on maps?)
+- handle non-Canada locations (GAC, IRCC, CBSA, ...)—they seem to have two-digit geographic_location_codes, 91 to 99, and have all been assigned the QC PT lol?
 - add filtering for locations
 
+
+```js
+const international_geographic_location_codes = [
+	"91",
+	"92",
+	"93",
+	"94",
+	"95",
+	"96",
+	"97",
+	"98",
+	"99",
+]
+```
+
+```js
+const international_locations = [
+	{"geographic_location_code": "91", "work_location": "Europe"},
+	{"geographic_location_code": "93", "work_location": "Africa"},
+	{"geographic_location_code": "95", "work_location": "AsiaMiddle EastIndiaPakistan"},
+	{"geographic_location_code": "96", "work_location": "AustraliaNew Zealand some of the south Pacific"},
+	{"geographic_location_code": "97", "work_location": "South America"},
+	{"geographic_location_code": "98", "work_location": "Central AmericaMexico Caribbean"},
+	{"geographic_location_code": "99", "work_location": "United StatesGreenlandBermudaSt. Pierre & Miquelon"},
+]
+```
 
 ```js
 // Source: https://observablehq.com/@nshiab/provinces-and-territories-labels
@@ -251,11 +324,15 @@ const gc_positions_org_geo_qry = await PCIS.query_positions_graph_db(`
 `)
 
 const gc_positions_org_geo = aq.from(gc_positions_org_geo_qry)
+	.params({ international_geographic_location_codes })
 	.derive({
 		census_division: d => aq.op.substring(d.geographic_location_code, 0, 4)
 	})
 	.derive({
 		province_territory: d => (aq.op.includes(["3506", "2481"], d.census_division)) ? "NCR" : d.province_territory
+	})
+	.derive({
+		province_territory: d => (aq.op.includes(international_geographic_location_codes, d.geographic_location_code)) ? "INTL" : d.province_territory
 	})
 	.objects()
 ```
