@@ -55,7 +55,7 @@ const employees_by_pt_pcts = new Map(employees_by_pt.map(d => [d.PRUID, d.pct]))
 ```js
 Plot.plot({
 	title: `Positions at ${org_to_analyze_label} by province / territory / region`,
-	caption: remove_top_location ? html`The top province / territory / region, ${removed_top_pt.province_territory}, is not shown in this map due to the “Remove top location” toggle at the start of the report. It has ${removed_top_pt.count.toLocaleString()} (${removed_top_pt.pct}%) of the positions at ${org_to_analyze_label}. Percentages in the map reflect the percentage of <em>total</em> positions at the department.` : '',
+	caption: remove_top_location ? html`The top province / territory / region, ${removed_top_pt.province_territory}, is not shown in this map due to the “Remove top location” toggle at the start of the report. It has ${removed_top_pt.count.toLocaleString()} (${removed_top_pt.pct}%) of the positions at ${org_to_analyze_label}. Percentages in the map reflect the percentage of <em>total</em> positions at the department, including those not shown from ${removed_top_pt.province_territory}.` : '',
   projection: {
     type: "conic-conformal",
     rotate: [100, -60],
@@ -89,8 +89,28 @@ Plot.plot({
 ```
 
 ```js
+const org_positions_by_cd_raw = aq.from(departmental_positions)
+	.groupby("census_division")
+	.count()
+	.derive({pct: d => Math.round(d.count / aq.op.sum(d.count) *1000) / 10})
+	.orderby(aq.desc('count'))
+	.derive({rank: d => aq.op.rank()})
+	.objects()
+
+const org_positions_by_cd = org_positions_by_cd_raw
+	.filter(d => remove_top_location ? d.rank > 1 : true )
+
+const removed_top_cd = org_positions_by_cd_raw
+	.filter(d => d.rank == 1)[0]
+
+const org_positions_by_cd_counts = new Map(org_positions_by_cd.map(d => [d.census_division, d.count]))
+const org_positions_by_cd_pcts = new Map(org_positions_by_cd.map(d => [d.census_division, d.pct]))
+```
+
+```js
 Plot.plot({
 	title: `Positions at ${org_to_analyze_label} by census division`,
+	caption: remove_top_location ? html`The top census division, ${canada_cds_names.get(removed_top_cd.census_division)} (#${removed_top_cd.census_division}), is not shown in this map due to the “Remove top location” toggle at the start of the report. It has ${removed_top_cd.count.toLocaleString()} (${removed_top_cd.pct}%) of the positions at ${org_to_analyze_label}. Percentages in the map reflect the percentage of <em>total</em> positions at the department, including those not shown from ${canada_cds_names.get(removed_top_cd.census_division)}.` : '',
   projection: {
     type: "conic-conformal",
     rotate: [100, -60],
@@ -100,7 +120,7 @@ Plot.plot({
   color: {
 	scheme: "bupu",
 	scale: "quantize",
-	// range: [0.2, 0.8], // subsetting the colour range: https://observablehq.com/plot/features/scales#color-scale-options
+	range: [0.2, 0.8], // subsetting the colour range: https://observablehq.com/plot/features/scales#color-scale-options
     label: "Positions",
     legend: true
   },
@@ -108,18 +128,19 @@ Plot.plot({
 		Plot.geo(
 			canada_pts_geojson,
 			{
-				strokeOpacity: 0.5
+				strokeOpacity: 0.5,
+				strokeWidth: 0.5
 			}
 		),
 		Plot.geo(
 			canada_cds_geojson,
 			Plot.centroid({
-				fill: (d) => departmental_positions.filter(p => p.census_division == d.properties.CDUID).length,
+				fill: (d) => org_positions_by_cd_counts.get(d.properties.CDUID),
 				tip: true,
 				channels: {
 					"Census Division": d => `${d.properties.CDNAME} (#${d.properties.CDUID})`
 				},
-				strokeOpacity: 0.1
+				strokeOpacity: 0
 			})
 		),
 	]
@@ -172,6 +193,13 @@ function get_canada_cds_geojson() {
 }
 
 const canada_cds_geojson = get_canada_cds_geojson()
+
+const canada_cds_names = new Map(canada_cds_geojson_raw.features
+		.map(cd => [
+			cd.properties.CDUID,
+			cd.properties.CDNAME
+		])
+	)
 ```
 
 Data sources:
