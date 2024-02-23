@@ -40,6 +40,17 @@ There are some important pieces missing, which affect some of the analyses (thou
 In a few cases, we’ve [manually added missing information (title and supervisor)](https://github.com/lchski/pcis-analysis/blob/main/data/indexes/missing-positions.csv) where we have a high degree of confidence in the information (generally for higher-level positions where we can use open-source information to validate the additions).
 
 
+<div class="caution">
+	<p>Because we lack supervisor IDs for inferred positions, and can’t complete reporting trees as a result, numbers of inferred positions should be taken as a <em>lower-bound estimate</em>. For organizations with particularly high numbers of inferred positions (see table below), we can safely assume that there are even more positions missing.</p>
+	<p>A good example of this is Library and Archives Canada (LAC):</p>
+	<ul>
+		<li>The November 21, 2022 export of PCIS+ listed 1,374 positions at LAC; the December 21, 2023 export (on which these reports are based) lists 538, from which we could infer 113 more, for a total of 651 positions.</li>
+		<li>This is still 723 positions short of the November 21, 2022 export—barring enormous change at LAC in that period, this suggests we may have only 47% of LAC’s positions in this version of the database.</li>
+		<li>This discrepancy is hinted at by LAC’s high percentage of inferred positions (17.4%) relative to its total.</li>
+	</ul>
+	<p>This also impacts statistics like <code>reports_total</code> and so on. Statistics from these reports <em>must</em> be used with care, particularly for departments with high percentages of inferred positions. Data’s messy, folks, let’s be responsible about it!</p>
+</div>
+
 
 ## By department
 
