@@ -171,7 +171,7 @@ Plot.plot({
 		concentration = "extremely"
 	}
 
-	let positions_with_unknown_cd = org_positions_by_cd_detailed.find(d => d.census_division == null)
+	let positions_with_unknown_cd = org_positions_by_cd_detailed.find(d => d.id == null)
 	
 	view(html`<p>${org_to_analyze_label} is ${concentration} geographically concentrated, with ${org_positions_by_cd_detailed[0].pct}% of its positions in the ${org_positions_by_cd_detailed[0].census_division} census division, and its remaining positions in ${(org_positions_by_cd_detailed.length - 1).toLocaleString()} other census division(s) (including ${positions_with_unknown_cd.count.toLocaleString()} position(s), likely inferred, with an unknown work location).</p><p>Here’s the distribution of positions by census division:</p>`)
 }
@@ -186,6 +186,19 @@ const org_positions_by_cd_detailed = aq.from(org_positions_by_cd_raw)
 		count: cd.count,
 		pct: cd.pct
 	}))
+	.map(cd => {
+		let cd_detailed = cd;
+
+		if (international_geographic_location_codes.includes(cd.id)) {
+			cd_detailed.census_division = `INTL: ${international_locations.find(d => d.geographic_location_code == cd.id).work_location}`
+		}
+
+		if (cd.id == null) {
+			cd_detailed.census_division = "*Unknown (*likely an inferred position)"
+		}
+
+		return cd_detailed;
+	})
 
 view(Inputs.table(
 	org_positions_by_cd_detailed
