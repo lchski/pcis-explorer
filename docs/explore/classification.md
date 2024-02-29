@@ -75,6 +75,10 @@ const group_positions_by_level_and_supervisor_status = aq.from(group_positions)
 	.derive({
 		'%': d => Math.round(d.count / aq.op.sum(d.count) * 1000) / 10
 	})
+	.groupby('level')
+	.derive({
+		'%_level': d => Math.round(d.count / aq.op.sum(d.count) * 1000) / 10
+	})
 	.orderby(aq.desc('level'))
 	.rename({'count': '#'})
 	.derive({
@@ -98,7 +102,8 @@ display(Plot.plot({
 			y: "supervisory_status",
 			fill: "supervisory_status",
 			fy: "level",
-			title: d => `${d['#'].toLocaleString()} positions (${d['%']}%)`,
+			title: d => `${d['#'].toLocaleString()} ${d.supervisory_status.toLocaleLowerCase()} ${group_of_interest}-${d.level} positions\n\n${d['%_level']}% of ${group_of_interest}-${d.level} positions\n${d['%']}% of all ${group_of_interest} positions`,
+			tip: true,
 			sort: {
 				fy: "y",
 				reverse: true
@@ -121,6 +126,38 @@ function sparkbar(max) {
     display: flex;
     justify-content: end;">${x.toLocaleString()}%`
 }
+```
+
+```js
+Plot.plot({
+	marginLeft: 350,
+	y: {
+		label: "Organization",
+	},
+	x: {
+		label: `Number of ${group_of_interest} positions`
+	},
+	color: {
+		legend: true,
+		scheme: "Cividis",
+		range: [0.2, 0.8],
+		label: "Supervisory status"
+	},
+	marks: [
+		Plot.barX(
+			group_positions
+				.filter(d => d.organization != null)
+				.map(d => ({
+					...d,
+					supervisory_status: d.is_supervisor ? "Supervisor" : "Individual contributor" 
+				})),
+			Plot.groupY(
+				{x: "count"},
+				{y: "organization", fill: "supervisory_status", tip: true}
+			)
+		)
+	]
+})
 ```
 
 [basic stats, in comparison to GC averages]
