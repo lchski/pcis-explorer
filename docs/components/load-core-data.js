@@ -97,5 +97,3 @@ export function top_n_for_grouping_var(grouping_var, positions_to_analyze, limit
 
 	return top_n
 }
-
-// TODO: Add geo fixes here?

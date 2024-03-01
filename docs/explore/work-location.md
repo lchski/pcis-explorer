@@ -209,7 +209,6 @@ view(Inputs.table(
 
 TODO:
 - handle null locations (add them to the captions on maps?)
-- handle non-Canada locations (GAC, IRCC, CBSA, ...)—they seem to have two-digit geographic_location_codes, 91 to 99, and have all been assigned the QC PT lol?
 - add filtering for locations
 
 ## Orgs outside the NCR
@@ -374,20 +373,10 @@ const gc_positions_org_geo_qry = await PCIS.query_positions_graph_db(`
 		reports_total,
 		work_location,
 		geographic_location_code,
+		census_division,
 		province_territory
 	FROM nodes
 `)
 
-const gc_positions_org_geo = aq.from(gc_positions_org_geo_qry)
-	.params({ international_geographic_location_codes })
-	.derive({
-		census_division: d => aq.op.substring(d.geographic_location_code, 0, 4)
-	})
-	.derive({
-		province_territory: d => (aq.op.includes(["3506", "2481"], d.census_division)) ? "NCR" : d.province_territory
-	})
-	.derive({
-		province_territory: d => (aq.op.includes(international_geographic_location_codes, d.geographic_location_code)) ? "INTL" : d.province_territory
-	})
-	.objects()
+const gc_positions_org_geo = gc_positions_org_geo_qry
 ```
